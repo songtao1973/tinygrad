@@ -217,16 +217,16 @@ class ScheduleItemContext:
   assigns: set[UOp]
   var_vals: dict[Variable, int]
   sinked: dict[UOp, UOp]
-  sts: set[ShapeTracker] = field(default_factory=set)
   bufs: list[UOp] = field(default_factory=list)
   metadata: set[Metadata] = field(default_factory=set)
   assign_adj: dict[UOp, list[UOp]] = field(default_factory=dict)
 
 def _append_st_vars(ctx:ScheduleItemContext, x:UOp) -> UOp|None:
-  if (st:=unwrap(x.st)) in ctx.sts: return None
-  st, var_vals = st.simplify().unbind()
-  ctx.var_vals.update(var_vals)
-  ctx.sts.add(st)
+  st = unwrap(x.st).simplify()
+  try:
+    st, var_vals = st.unbind()
+    ctx.var_vals.update(var_vals)
+  except AssertionError: pass # TOOD: is it possible to check if an st is unbound already?
   return st.to_uop() if st != x.st else None
 
 def _append_buf(ctx:ScheduleItemContext, x:UOp) -> UOp:
